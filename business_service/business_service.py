@@ -32,7 +32,7 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
 )
 
-async def send_log(log_level, message):
+def send_log(log_level, message):
     point = Point("business_logs")\
         .tag("level", log_level)\
         .field("message", message)\
@@ -47,8 +47,6 @@ async def send_log(log_level, message):
 def analyse_user_request(self, message: str):
     self.update_state(state='IN_PROGRESS')
     result = None
-    task_id = self.request.id
-    send_log("INFO", f"Task {task_id}: starting analyse user message")
     
     try:
         time.sleep(10)
@@ -57,38 +55,36 @@ def analyse_user_request(self, message: str):
             if random.random() < 0.5
             else {"message": f"Amount of words: {len(message.split())}"}
         )
-        send_log("INFO", f"Task {task_id}: analysis was successfully completed")
         return result
 
     except Exception as e:
-        send_log("ERROR", f"Task {task_id}: exception during analysis: {str(e)}")
         self.update_state(state='FAILED', meta={'exc_type': type(e).__name__, 'exc_message': str(e)})
         raise HTTPException(status_code=500, detail="Internal analysis error")
 
 @app.get("/")
-async def get_description():
-    await send_log("INFO", "User use root endpoint")
+def get_description():
+    send_log("INFO", "User use root endpoint")
     return {"details": "business part of simple app which simulate llm work"}
 
 @app.get("/health")
-async def get_healthcheck():
-    await send_log("INFO", "User check health status")
+def get_healthcheck():
+    send_log("INFO", "User check health status")
     return {"status": 200}
 
 @app.post("/process", status_code=202)
-async def submit_task(message: str):
-    await send_log("INFO", "Starting analyse user message")
+def submit_task(message: str):
+    send_log("INFO", "Starting analyse user message")
 
     task = analyse_user_request.delay(message)
-    await send_log("INFO", f"Submitted task {task.id}. Prompt: '{message}'")
+    send_log("INFO", f"Submitted task {task.id}. Prompt: '{message}'")
     return {"task_id": task.id, "status": "ACCEPTED"}
     
 @app.get("/status/{task_id}")
-async def get_task_status(task_id: str):
+def get_task_status(task_id: str):
     task_result = AsyncResult(task_id, app=celery_app)
     response_status = "PENDING"
     result_data = None
-    await send_log("INFO", f"Checking status for task {task_id}. Current Celery state: {task_result.state}")
+    send_log("INFO", f"Checking status for task {task_id}. Current Celery state: {task_result.state}")
 
     if task_result.state == 'PENDING':
          response_status = "ACCEPTED"
@@ -107,9 +103,9 @@ async def get_task_status(task_id: str):
                  result_data = exc_info
             else:
                  result_data = {"error": "Task Failed", "details": str(exc_info) if exc_info else "No specific error details available."}
-            await send_log("ERROR", f"Task {task_id} failed. Result info: {result_data}")
+            send_log("ERROR", f"Task {task_id} failed. Result info: {result_data}")
         except Exception as e:
-            await send_log("ERROR", f"Error retrieving result/info for failed task {task_id}: {e}")
+            send_log("ERROR", f"Error retrieving result/info for failed task {task_id}: {e}")
             result_data = {"error": "Result Retrieval Error", "details": "Could not retrieve failure details."}
 
     elif task_result.state == 'RETRY':
@@ -117,5 +113,5 @@ async def get_task_status(task_id: str):
     else:
         response_status = task_result.state
 
-    await send_log("INFO", f"Checking status for task {task_id}. Check finished")
+    send_log("INFO", f"Checking status for task {task_id}. Check finished")
     return {"task_id": task_id, "status": response_status, "result": result_data}
