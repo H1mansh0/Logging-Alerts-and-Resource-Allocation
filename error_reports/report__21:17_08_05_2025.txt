@@ -1,0 +1,3 @@
+Time: 2025-05-08 21:17:21.965784+03:00
+Type of error: PERSONAL INFO
+Description: Input message contains personal information

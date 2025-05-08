@@ -1,0 +1,83 @@
+services:
+
+  influxdb:
+    image: influxdb
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=12345678
+      - DOCKER_INFLUXDB_INIT_ORG=ucu
+      - DOCKER_INFLUXDB_INIT_BUCKET=logs
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=infinitetoken
+    networks:
+      - internal-network
+    ports:
+      - "8086:8086"
+
+  redis:
+    image: redis:7
+    networks:
+      - internal-network
+
+  business-service:
+    build: 
+      context: .
+      dockerfile: Dockerfile.business
+    command: uvicorn business_service:app --host 0.0.0.0 --port 8001
+    networks:
+      - internal-network
+    depends_on:
+      - influxdb
+      - redis
+  
+  celery-worker1:
+    build:
+      context: .
+      dockerfile: Dockerfile.business
+    command: celery -A business_service.celery_app worker --loglevel=info --hostname=worker1@%h
+    networks:
+      - internal-network
+    depends_on:
+      business-service:
+        condition: service_started
+      influxdb:
+        condition: service_started
+      redis:
+        condition: service_started
+  
+  celery-worker2:
+    build:
+      context: .
+      dockerfile: Dockerfile.business
+    command: celery -A business_service.celery_app worker --loglevel=info --hostname=worker2@%h
+    networks:
+      - internal-network
+    depends_on:
+      business-service:
+        condition: service_started
+      influxdb:
+        condition: service_started
+      redis:
+        condition: service_started
+
+  client-service:
+    build: 
+      context: .
+      dockerfile: Dockerfile.client
+    command: uvicorn client_service:app --host 0.0.0.0 --port 8000
+    volumes:
+      - "./error_reports/:/app/error_reports/"
+    ports:
+      - "8000:8000"
+    networks:
+      - internal-network
+    depends_on:
+      business-service:
+        condition: service_started
+      celery-worker1:
+        condition: service_started
+      celery-worker2:
+        condition: service_started
+    
+networks:
+  internal-network:

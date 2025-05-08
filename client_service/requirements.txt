@@ -1,0 +1,6 @@
+fastapi
+influxdb_client
+requests
+pytz
+uvicorn
+celery
