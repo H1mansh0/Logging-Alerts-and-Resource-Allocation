@@ -11,8 +11,6 @@ services:
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=infinitetoken
     networks:
       - internal-network
-    ports:
-      - "8086:8086"
 
   redis:
     image: redis:7
