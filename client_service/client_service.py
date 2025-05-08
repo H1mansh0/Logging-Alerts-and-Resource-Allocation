@@ -7,6 +7,7 @@ from requests import get, post
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from datetime import datetime
 
+# WAIT FOR ALL OTHER SERVICES TO START
 time.sleep(5)
 
 app = FastAPI()
@@ -105,6 +106,12 @@ def get_healthcheck():
 
 @app.get("/status/{task_id}")
 def get_task_status(task_id: str):
+    health_status = get(f"{BUSINEES_URL}/health").json()
+
+    if health_status["status"] != 200:
+        send_log("ERROR", "Business service is not accessible")
+        raise HTTPException(500, "Business service is not accessible")
+    
     responce = get(f"{BUSINEES_URL}/status/{task_id}")
     return JSONResponse(content=responce.json())
 
@@ -114,6 +121,12 @@ def submit_task(message: str):
 
     if bad_input:
         raise HTTPException(403, info)
+    
+    health_status = get(f"{BUSINEES_URL}/health").json()
+
+    if health_status["status"] != 200:
+        send_log("ERROR", "Business service is not accessible")
+        raise HTTPException(500, "Business service is not accessible")
     
     responce = post(f"{BUSINEES_URL}/process?message={message}")
     return JSONResponse(content=responce.json())

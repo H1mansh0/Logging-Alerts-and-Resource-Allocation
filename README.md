@@ -51,7 +51,7 @@ Comment: we don't need much instances when dealing with low-I/O operations (like
 ![one_task](./assets/one_task.png)
 4. Submit multiple tasks and check worker logs `curl -X POST 'http://localhost:8000/process?message=somecoolmessage'`
 ![many_tasks](./assets/many_tasks.png)
-5. Check status of some task and then check it resault `curl 'http://localhost:8000/status/5055de32-7871-45a1-83fc-47c3e7ab4f61'`
+5. Check status of some task and then check it resault `curl 'http://localhost:8000/status/{task_id}'`
 ![task](./assets/task.png)
 6. Check the functionality of the alert service `curl -X POST 'http://localhost:8000/process?message=my%20phone%20number%20:+380991414444'`
 ![alert_file](./assets/alert_file.png)

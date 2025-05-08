@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from celery import Celery
 from celery.result import AsyncResult
 
+# WAIT FOR ALL OTHER SERVICES TO START
 time.sleep(5)
 
 app = FastAPI()
