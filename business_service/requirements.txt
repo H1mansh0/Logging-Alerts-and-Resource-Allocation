@@ -2,4 +2,5 @@ fastapi
 influxdb_client
 uvicorn
 celery
+pytz
 Redis

@@ -1,8 +1,9 @@
 import time
 import random
+import pytz
 from fastapi import FastAPI, HTTPException
 from influxdb_client import InfluxDBClient, Point, WritePrecision
-from datetime import datetime, timezone
+from datetime import datetime
 from celery import Celery
 from celery.result import AsyncResult
 
@@ -36,7 +37,7 @@ def send_log(log_level, message):
     point = Point("business_logs")\
         .tag("level", log_level)\
         .field("message", message)\
-        .time(datetime.now(timezone.utc), WritePrecision.NS)
+        .time(datetime.now(pytz.timezone("Europe/Kyiv")), WritePrecision.NS)
     
     write_api = client.write_api()
     write_api.write(bucket="logs", org="ucu", record=point)
